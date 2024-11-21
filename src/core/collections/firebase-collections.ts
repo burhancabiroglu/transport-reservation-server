@@ -11,6 +11,7 @@ export class Collections {
   public static COMMUNICATION: string = "COMMUNICATION";
   public static APP_INFO: string = "APP_INFO";
   public static ADMIN_WHITE_LIST: string = "ADMIN_WHITE_LIST";
+  public static NOTIFICATION_EMAILS: string = "NOTIFICATION_EMAILS";
 }
 
 export class DOCS {

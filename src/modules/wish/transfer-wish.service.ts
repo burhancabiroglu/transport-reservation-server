@@ -9,10 +9,15 @@ import { type TransferWishRequest } from "@models/wish/transfer-wish.request";
 import { type TransferWishDto } from "@models/wish/transfer-wish.dto";
 import { type UserPayload } from "@models/payload/user-payload";
 import { FirebaseService } from "@modules/firebase/firebase.service";
+import { EventBus } from "@nestjs/cqrs";
+import { TransferWishAlertEvent } from "@models/event/comm.event";
 
 @Injectable()
 export class TransferWishService {
-	constructor(private readonly firebase: FirebaseService) { }
+	constructor(
+		private readonly firebase: FirebaseService,
+		private readonly eventBus: EventBus
+	) { }
 
 	public async createTransferWish(request: TransferWishRequest): Promise<CoreResponse<string>> {
 		try {
@@ -33,6 +38,8 @@ export class TransferWishService {
 				.doc(id)
 				.set(dao);
 
+			const dto = await this.getTransferWishesById(id)	
+			await this.eventBus.publish(new TransferWishAlertEvent(dto))	
 			return new CoreResponse(id); // Return the generated transfer ID
 		} catch (error) {
 			console.error("Error creating transfer wish:", error);
@@ -110,6 +117,32 @@ export class TransferWishService {
 		} catch (error) {
 			console.error("Error fetching TransferWishDto by userId", error);
 			throw new Error("Failed to fetch TransferWishDto by userId");
+		}
+	}
+	
+
+	public async getTransferWishesById(id: string): Promise<TransferWishDto> {
+		try {
+			const querySnapshot = await this.firebase
+				.collection(Collections.TRANSFER_REQUESTS)
+				.doc(id)
+				.get();
+
+			const dao = querySnapshot.data() as TransferWishDAO;
+			const ref: DocumentReference = this.firebase
+				.collection(Collections.USERS)
+				.doc(dao.userId);
+			const snapshot = await ref.get();
+
+			const user = snapshot.data() as AppUser;
+			return {
+				...dao,
+				email: user.email,
+				fullname: `${user.name} ${user.surname}`
+			};
+		} catch (error) {
+			console.error("Error fetching TransferWishDto by id", error);
+			throw new Error("Failed to fetch TransferWishDto by id");
 		}
 	}
 }

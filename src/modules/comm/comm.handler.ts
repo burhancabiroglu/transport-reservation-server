@@ -4,6 +4,7 @@ import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { 
   CommunicationEvent, 
   PasswordResetEvent, 
+  UserAlertEvent, 
   UserConfirmationEvent 
 } from "@models/event/comm.event";
 
@@ -13,13 +14,15 @@ export class CommunicationHandler implements IEventHandler<CommunicationEvent> {
 	constructor(private readonly service: CommunicationService) { }
 
   async handle(event: CommunicationEvent) {
-    switch(event.constructor) {
-      case UserConfirmationEvent:
-        const p0 = event as UserConfirmationEvent
-        return this.service.sendAuthConfirmation(p0.fullname,p0.email);
-      case PasswordResetEvent:
-        const p1 = event as PasswordResetEvent;
-        return this.service.sendResetPasswordLink(p1.link,p1.email);
+    switch(true) {
+      case event instanceof UserConfirmationEvent:
+        return this.service.sendAuthConfirmation(event.fullname,event.email);
+      case event instanceof PasswordResetEvent:
+        return this.service.sendResetPasswordLink(event.link,event.email);
+      case event instanceof UserAlertEvent:
+        return this.service.sendUserAlert(event.fullname,event.email);
+      case event instanceof UserAlertEvent:
+        return this.service.sendUserAlert(event.fullname,event.email);
     }
   }  
 }

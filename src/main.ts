@@ -11,6 +11,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { CqrsModule } from "@nestjs/cqrs";
 import { CommunicationModule } from "@modules/comm/comm.module";
 import { PolicyModule } from "@modules/policy/policy.module";
+import { NotifierModule } from "@modules/notifier/notifier.module";
 
 
 @Module({
@@ -35,7 +36,8 @@ import { PolicyModule } from "@modules/policy/policy.module";
 		TransferModule,
 		TransferWishModule,
 		CommunicationModule,
-		PolicyModule
+		PolicyModule,
+		NotifierModule
 	],
 	controllers: [],
 	providers: [],

@@ -1,0 +1,24 @@
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJHTFByYTNYbERJYzRzVTdsbzFZMmNrMGhEV1YyIiwiaXNBZG1pbiI6dHJ1ZSwiaWF0IjoxNzMyMTM5ODI5LCJleHAiOjE3MzMzNDk0Mjl9.jIDZAq202r9GDkY2ewylX7kpbNtQdMizux9ZNYHl-jI
+
+### Fetch Notifier Emails List
+GET http://localhost:3000/notifier
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+### Add a New Notifier Email
+POST http://localhost:3000/notifier
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+###
+
+### Delete a Notifier Email
+DELETE http://localhost:3000/notifier?email=test@example.com
+Authorization: Bearer {{token}}
+Accept: application/json

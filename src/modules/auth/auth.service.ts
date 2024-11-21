@@ -21,7 +21,7 @@ import { AuthErrorCodes } from "@core/config/auth-error-codes";
 import { UserFcmDto } from "@models/user/user-fcm-dto";
 import { ResetPasswordRequest } from "@models/reset/reset-password-request";
 import { EventBus } from "@nestjs/cqrs";
-import { PasswordResetEvent } from "@models/event/comm.event";
+import { PasswordResetEvent, UserAlertEvent } from "@models/event/comm.event";
 import { SeatStatus } from "@core/config/seat-status-enum";
 
 @Injectable()
@@ -51,9 +51,10 @@ export class AuthService {
         emailVerified: isAdminEmail,
         isApproved: isAdminEmail,
         isBanned: false,
-        isAdmin: await this.isAdminEmail(email),
+        isAdmin: isAdminEmail,
       }
       await this.firebase.collection(Collections.USERS).doc(user.uid).set(user);
+      await this.eventBus.publish(new UserAlertEvent(`${user.name} ${user.surname}`, user.email))
 
       return new CoreResponse(`User ${email} was registered successfully`);
     } catch (error) {

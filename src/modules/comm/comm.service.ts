@@ -1,13 +1,17 @@
 import { Collections, DOCS } from "@core/collections/firebase-collections";
 import { CoreResponse } from "@core/types/core-response";
 import { type MailInfoDAO } from "@models/mail/mail-info";
+import { userAlertTemplate } from "@models/mail/templates/user-alert-template";
 import { resetPasswordTemplate } from "@models/mail/templates/reset-pass-template";
 import { userTemplate } from "@models/mail/templates/user-template";
 import { TransferDto } from "@models/transfer/transfer.dto";
 import { FirebaseService } from "@modules/firebase/firebase.service";
+import { NotifierService } from "@modules/notifier/notifier.service";
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { createTransport, Transporter } from "nodemailer";
 import { type MailOptions } from "nodemailer/lib/json-transport";
+import { TransferWishDto } from "@models/wish/transfer-wish.dto";
+import { transferWishNotificationTemplate } from "@models/mail/templates/transfer-wish-template";
 
 
 @Injectable()
@@ -15,7 +19,10 @@ export class CommunicationService {
 	public sender: MailInfoDAO;
 	protected transporter?: Transporter;
 
-	constructor(readonly firebase: FirebaseService) { this.init() }
+	constructor(
+		readonly firebase: FirebaseService,
+		readonly notifier: NotifierService
+	) { this.init() }
 
 
 	private async init() {
@@ -31,6 +38,9 @@ export class CommunicationService {
 	createTransporter(info: MailInfoDAO) {
 		this.transporter = createTransport({
 			host: info.host,
+			pool: true,
+			connectionTimeout: 10000, // 10 seconds
+			greetingTimeout: 5000, // 5 seconds
 			auth: {
 				user: info.user,
 				pass: info.password,
@@ -97,5 +107,66 @@ export class CommunicationService {
 		return this.sendMail(
 			userTemplate(this.sender.user, email, transferInfo.id)
 		)
+	}
+	async sendUserAlert(fullname: string, email: string): Promise<void> {
+		try {
+			const response = await this.notifier.getNotifierList();
+	
+			if (!response.data || response.data.length === 0) {
+				console.warn('No admin emails found to notify.');
+				return;
+			}
+	
+			// Send all emails in parallel
+			await Promise.all(
+				response.data.map(async (adminEmail) => {
+					try {
+						await this.sendMail(
+							userAlertTemplate(this.sender.user, adminEmail, fullname, email),
+						);
+						console.log(`Email sent to ${adminEmail}`);
+					} catch (error) {
+						console.error(`Failed to send email to ${adminEmail}:`, error);
+					}
+				}),
+			);
+	
+			console.log('All emails sent successfully');
+		} catch (error) {
+			console.error('Error while sending new user confirmation emails:', error);
+			throw new Error('Failed to send new user confirmation emails');
+		}
+	}
+
+	
+	async sendTransferWishAlert(transferWish: TransferWishDto): Promise<void> {
+		try {
+			const response = await this.notifier.getNotifierList();
+			const adminEmails = response.data;
+	
+			if (!adminEmails || adminEmails.length === 0) {
+				console.warn('No admin emails found to notify.');
+				return;
+			}
+	
+			// Send emails in parallel
+			await Promise.all(
+				adminEmails.map(async (adminEmail) => {
+					try {
+						await this.sendMail(
+							transferWishNotificationTemplate(this.sender.user, adminEmail, transferWish),
+						);
+						console.log(`Email sent to admin: ${adminEmail}`);
+					} catch (error) {
+						console.error(`Failed to send email to admin: ${adminEmail}`, error);
+					}
+				}),
+			);
+	
+			console.log('Admin notifications sent successfully');
+		} catch (error) {
+			console.error('Error while sending transfer wish notifications:', error);
+			throw new Error('Failed to notify admins about transfer wish.');
+		}
 	}
 }
